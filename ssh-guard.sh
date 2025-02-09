@@ -1,20 +1,5 @@
 #!/bin/bash
 
-# Combined script to list SSH login attempts (failed, successful, or both) using journalctl
-
-# Check if systemd journaling is available
-if ! command -v journalctl &> /dev/null; then
-  echo "journalctl is not installed or not available. Cannot retrieve logs."
-  exit 1
-fi
-
-# Prompt the user for the choice
-echo "Select an option to list SSH login attempts:"
-echo "[1] LIST FAILED SSH ATTEMPTS"
-echo "[2] LIST SUCCESSFUL SSH LOGINS"
-echo "[3] LIST BOTH"
-read -p "Enter your choice (1/2/3): " choice
-
 # Function to list failed SSH login attempts
 list_failed_logins() {
   echo "[INFO] Listing all failed SSH login attempts..."
@@ -25,33 +10,66 @@ list_failed_logins() {
     sort -n
 }
 
-# Function to list successful SSH login attempts
+# Function to list successful SSH logins
 list_successful_logins() {
-  echo "[INFO] Listing all successful SSH login attempts..."
+  echo "[INFO] Listing all successful SSH logins..."
   sudo journalctl -u ssh --since "1 week ago" | grep "Accepted password" | \
+    awk '{print $1, $2, $3, $11}' | \
+    sort
+}
+
+# Function to list both successful and failed SSH logins
+list_both_logins() {
+  echo "[INFO] Listing all failed SSH login attempts..."
+  sudo journalctl -u ssh --since "1 week ago" | grep "Failed password" | \
     awk '{print $1, $2, $3, $11}' | \
     sort | \
     uniq -c | \
     sort -n
+
+  echo "[INFO] Listing all successful SSH logins..."
+  sudo journalctl -u ssh --since "1 week ago" | grep "Accepted password" | \
+    awk '{print $1, $2, $3, $11}' | \
+    sort
 }
 
-# Logic based on user's choice
-case $choice in
-  1)
-    list_failed_logins
-    ;;
-  2)
-    list_successful_logins
-    ;;
-  3)
-    echo "[INFO] Listing both failed and successful SSH login attempts..."
-    echo "== Failed SSH attempts =="
-    list_failed_logins
-    echo "== Successful SSH logins =="
-    list_successful_logins
-    ;;
-  *)
-    echo "Invalid choice. Exiting."
-    exit 1
-    ;;
-esac
+# Function to display the menu and prompt for user selection
+show_menu() {
+  clear
+  echo "==================================="
+  echo "       SSH Log Monitoring Script   "
+  echo "==================================="
+  echo "1. List Failed SSH Attempts"
+  echo "2. List Successful SSH Logins"
+  echo "3. List Both Failed and Successful SSH Logins"
+  echo "4. Quit"
+  echo "==================================="
+  read -p "Please select an option (1-4): " option
+}
+
+# Main loop to handle the menu options
+while true; do
+  show_menu
+
+  case $option in
+    1)
+      list_failed_logins
+      ;;
+    2)
+      list_successful_logins
+      ;;
+    3)
+      list_both_logins
+      ;;
+    4)
+      echo "Exiting the script. Goodbye!"
+      break
+      ;;
+    *)
+      echo "Invalid option. Please try again."
+      ;;
+  esac
+
+  # Wait for user input before showing the menu again
+  read -p "Press [Enter] to continue..." 
+done
