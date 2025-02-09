@@ -15,5 +15,5 @@ Run the following commands to clone the repository, make the script executable, 
 ```bash
 git clone https://github.com/GlitchLinux/ssh-guard.sh.git && \
 cd ssh-guard.sh && \
-chmod +x ssh-login-monitor.sh && \
-./ssh-login-monitor.sh
+chmod +x ssh-guard.sh && \
+./ssh-guard.sh
